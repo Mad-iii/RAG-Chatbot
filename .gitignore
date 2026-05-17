@@ -1,0 +1,21 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env_folder/
+
+# Chroma vector store
+chroma_store/
+
+# IDEs
+.vscode/
+.idea/
