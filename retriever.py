@@ -1,12 +1,10 @@
-import chromadb
-from sentence_transformers import SentenceTransformer
-
-EMBED_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
-client = chromadb.PersistentClient(path="./chroma_store")
-collection = client.get_or_create_collection("rag_docs")
+from db import get_collection
+from embedder import get_embed_model
 
 def retrieve(query, top_k=10):
-    query_embedding = EMBED_MODEL.encode([query]).tolist()
+    embed_model = get_embed_model()
+    query_embedding = embed_model.encode([query]).tolist()
+    collection = get_collection()
     results = collection.query(
         query_embeddings=query_embedding,
         n_results=top_k,

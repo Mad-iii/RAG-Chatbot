@@ -1,12 +1,7 @@
 import os
-import chromadb
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
-from chromadb.config import Settings
-
-EMBED_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
-client = chromadb.PersistentClient(path="./chroma_store")
-collection = client.get_or_create_collection("rag_docs")
+from embedder import get_embed_model
+from db import get_collection
 
 def chunk_text(text, chunk_size=500, overlap=50):
     words = text.split()
@@ -30,16 +25,16 @@ def ingest_pdf(pdf_path):
             all_chunks.append(chunk)
             metadatas.append({"source": filename, "page": page_num + 1})
 
-    embeddings = EMBED_MODEL.encode(all_chunks).tolist()
+    embeddings = get_embed_model().encode(all_chunks).tolist()
     ids = [f"{filename}_p{m['page']}_{i}" for i, m in enumerate(metadatas)]
 
-    collection.add(
+    get_collection().add(
         documents=all_chunks,
         embeddings=embeddings,
         metadatas=metadatas,
         ids=ids
     )
-    print(f"✅ Ingested {len(all_chunks)} chunks from {filename}")
+    print(f"[OK] Ingested {len(all_chunks)} chunks from {filename}")
 
 if __name__ == "__main__":
     for f in os.listdir("./docs"):
