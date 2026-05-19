@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Scholar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;width:100%;overflow:hidden}
+:root{
+  --bg:#06040f;--border:rgba(255,255,255,.09);
+  --accent:#00d2ff;--green:#00f5c8;
+  --text:rgba(255,255,255,.90);--muted:rgba(255,255,255,.38);
+  --sb-w:260px;--font:'Plus Jakarta Sans',sans-serif;--font-hd:'Outfit',sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);
+  display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 5%,rgba(120,40,200,.60) 0%,transparent 55%),
+    radial-gradient(ellipse 65% 50% at 90% 15%,rgba(0,160,255,.45) 0%,transparent 52%),
+    radial-gradient(ellipse 50% 55% at 50% 96%,rgba(0,210,170,.28) 0%,transparent 55%),
+    radial-gradient(ellipse 100% 100% at 50% 50%,#0c0920 0%,#050310 100%)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:4px}
+
+#app{
+  position:relative;z-index:1;
+  width:min(1100px,96vw);height:calc(100vh - 40px);
+  background:rgba(255,255,255,.046);
+  backdrop-filter:blur(32px) saturate(160%);
+  -webkit-backdrop-filter:blur(32px) saturate(160%);
+  border:1px solid rgba(255,255,255,.11);border-radius:22px;
+  box-shadow:0 24px 64px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.13);
+  display:flex;overflow:hidden;
+}
+
+#sidebar{
+  width:var(--sb-w);min-width:var(--sb-w);height:100%;
+  background:rgba(6,4,18,.6);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:width .28s cubic-bezier(.4,0,.2,1),min-width .28s cubic-bezier(.4,0,.2,1),opacity .22s ease;
+  overflow:hidden;flex-shrink:0;
+}
+#sidebar.collapsed{width:0;min-width:0;opacity:0;pointer-events:none}
+.sb-inner{padding:1.5rem 1.1rem 1.1rem;display:flex;flex-direction:column;
+  height:100%;overflow-y:auto;overflow-x:hidden;width:var(--sb-w);}
+
+.sb-logo{display:flex;align-items:center;gap:9px;margin-bottom:1.6rem;flex-shrink:0}
+.sb-logo-icon{font-size:18px;color:var(--accent);text-shadow:0 0 12px rgba(0,210,255,.7)}
+.sb-logo-text{font-family:var(--font-hd);font-weight:700;font-size:18px;color:#fff;white-space:nowrap}
+.sb-logo-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 7px var(--accent);margin-left:auto;flex-shrink:0}
+
+.sb-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:9px;display:block;white-space:nowrap}
+.sb-rule{height:1px;background:var(--border);margin:1rem 0;flex-shrink:0}
+
+#drop-zone{border:1.5px dashed rgba(255,255,255,.18);border-radius:11px;
+  padding:1rem .7rem;text-align:center;cursor:pointer;
+  transition:all .25s ease;animation:bpulse 4s infinite ease-in-out;
+  margin-bottom:.7rem;flex-shrink:0}
+#drop-zone:hover,#drop-zone.drag-over{background:rgba(255,255,255,.06);
+  border-color:var(--accent);box-shadow:0 0 14px rgba(0,210,255,.1)}
+@keyframes bpulse{0%,100%{border-color:rgba(255,255,255,.18)}
+  50%{border-color:rgba(0,210,255,.4);box-shadow:0 0 8px rgba(0,210,255,.07)}}
+#drop-zone svg{width:20px;height:20px;fill:var(--accent);margin-bottom:5px;opacity:.8}
+#drop-zone p{font-size:10px;color:rgba(255,255,255,.45);line-height:1.5;white-space:nowrap}
+#drop-zone p span{color:var(--accent)}
+#file-input{display:none}
+
+#index-btn{display:none;width:100%;padding:.48rem .8rem;
+  background:rgba(0,210,255,.13);color:#fff;border:1px solid rgba(0,210,255,.3);
+  border-radius:9px;font-size:11px;font-weight:500;font-family:var(--font);
+  cursor:pointer;transition:all .22s ease;margin-bottom:.45rem;white-space:nowrap}
+#index-btn:hover{background:rgba(0,210,255,.22);border-color:rgba(0,210,255,.5);transform:translateY(-1px)}
+#index-btn.loading{opacity:.6;pointer-events:none}
+
+#upload-status{font-size:10px;color:var(--green);margin-bottom:.4rem;min-height:14px;
+  text-align:center;opacity:0;transition:opacity .3s;white-space:nowrap}
+#upload-status.show{opacity:1}
+
+#file-queue{margin-bottom:.3rem}
+.fq-item{display:flex;align-items:center;gap:6px;padding:4px 7px;border-radius:7px;
+  background:rgba(255,255,255,.04);margin-bottom:3px;font-size:10px;color:rgba(255,255,255,.6)}
+.fq-item svg{width:11px;height:11px;fill:var(--accent);flex-shrink:0}
+.fq-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fq-rm{cursor:pointer;color:rgba(255,255,255,.28);font-size:12px;transition:color .15s}
+.fq-rm:hover{color:#ff6b6b}
+
+#doc-list{flex:1;overflow-y:auto;min-height:0}
+
+.doc-card{border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:7px;overflow:hidden;transition:all .2s ease}
+.doc-card:hover{background:rgba(255,255,255,.07);border-color:rgba(0,210,255,.2)}
+.doc-card-header{display:flex;align-items:center;gap:8px;padding:7px 9px 5px}
+.doc-num{width:18px;height:18px;border-radius:5px;background:rgba(0,210,255,.18);border:1px solid rgba(0,210,255,.3);font-family:var(--font-hd);font-weight:700;font-size:9px;color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-title{font-size:10px;font-weight:500;color:rgba(255,255,255,.88);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.doc-live{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0}
+.doc-meta{padding:4px 9px 7px;font-size:9px;color:rgba(255,255,255,.32);border-top:1px solid rgba(255,255,255,.05);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.sb-bottom{flex-shrink:0;margin-top:auto;padding-top:.8rem}
+#clear-btn{width:100%;padding:.42rem .8rem;background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08);border-radius:9px;
+  font-size:10px;font-family:var(--font);cursor:pointer;transition:all .2s ease;
+  margin-bottom:.7rem;white-space:nowrap}
+#clear-btn:hover{background:rgba(255,255,255,.09);color:#fff}
+.sb-footer{font-size:9px;color:rgba(255,255,255,.2);line-height:2;text-align:center;white-space:nowrap}
+
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{display:flex;align-items:center;gap:10px;padding:.7rem 1.4rem .5rem;
+  border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+#sb-toggle{width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+  color:rgba(255,255,255,.75);font-size:13px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,border-color .2s,transform .15s;user-select:none;}
+#sb-toggle:hover{background:rgba(0,210,255,.18);border-color:rgba(0,210,255,.35);transform:scale(1.06)}
+.topbar-title{font-family:var(--font-hd);font-weight:600;font-size:14px;
+  color:rgba(255,255,255,.5);letter-spacing:.3px}
+
+#chat-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:1.8rem 2rem 1rem}
+
+#hero{padding:.2rem 0 .5rem}
+.hero-tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent);background:rgba(0,210,255,.11);
+  border:1px solid rgba(0,210,255,.22);border-radius:5px;padding:3px 9px;margin-bottom:1rem}
+.hero-title{font-family:var(--font-hd);font-weight:700;font-size:34px;color:#fff;
+  line-height:1.2;margin-bottom:.75rem}
+.hero-title em{font-style:italic;color:var(--accent)}
+.hero-desc{font-size:13px;font-weight:300;color:rgba(255,255,255,.55);line-height:1.8}
+.chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:1.3rem}
+.chip{font-size:11px;color:rgba(255,255,255,.7);background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.11);border-radius:7px;padding:5px 12px;
+  cursor:pointer;transition:all .2s ease}
+.chip:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+
+#messages{display:flex;flex-direction:column;gap:.55rem}
+.msg-u{display:flex;justify-content:flex-end}
+.msg-u-inner{background:rgba(0,210,255,.10);border:1px solid rgba(0,210,255,.24);
+  color:#fff;font-size:13px;line-height:1.7;
+  border-radius:16px 16px 4px 16px;padding:9px 14px;max-width:72%;animation:sbub .3s ease}
+.msg-a{display:flex;gap:10px;align-items:flex-start}
+.msg-av{width:26px;height:26px;border-radius:7px;flex-shrink:0;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-hd);font-weight:700;font-size:11px;color:var(--accent)}
+.msg-a-body{display:flex;flex-direction:column;gap:4px;max-width:82%}
+.msg-a-inner{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:4px 16px 16px 16px;padding:10px 14px;font-size:13px;font-weight:300;
+  color:rgba(255,255,255,.88);line-height:1.8;animation:sbub .35s ease;
+  white-space:pre-wrap;word-break:break-word}
+.src-row{display:flex;flex-wrap:wrap;gap:4px;padding-left:1px}
+.src-pill{display:inline-flex;align-items:center;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:2px 7px;
+  font-size:9px;color:rgba(255,255,255,.35);cursor:default;transition:all .18s ease}
+.src-pill:hover{background:rgba(0,210,255,.09);color:rgba(255,255,255,.8)}
+.thinking{display:flex;gap:4px;padding:3px 1px}
+.thinking span{width:5px;height:5px;border-radius:50%;background:var(--accent);
+  opacity:.4;animation:dot 1.2s infinite ease-in-out}
+.thinking span:nth-child(2){animation-delay:.2s}
+.thinking span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{transform:scale(.8);opacity:.3}40%{transform:scale(1.2);opacity:1}}
+@keyframes sbub{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+#input-bar{padding:.8rem 1.4rem 1rem;flex-shrink:0}
+#input-wrap{display:flex;align-items:flex-end;gap:9px;
+  background:rgba(12,9,30,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.13);border-radius:12px;
+  padding:.5rem .5rem .5rem .9rem;transition:border-color .25s,box-shadow .25s}
+#input-wrap:focus-within{border-color:rgba(0,210,255,.36);box-shadow:0 0 0 3px rgba(0,210,255,.06)}
+#q-input{flex:1;background:transparent;border:none;outline:none;color:#fff;
+  font-size:13px;font-weight:300;font-family:var(--font);caret-color:var(--accent);
+  resize:none;line-height:1.5;max-height:110px;overflow-y:auto}
+#q-input::placeholder{color:rgba(255,255,255,.28)}
+#send-btn{width:32px;height:32px;border-radius:8px;flex-shrink:0;
+  background:rgba(0,210,255,.18);border:1px solid rgba(0,210,255,.28);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+#send-btn:hover{background:rgba(0,210,255,.35)}
+#send-btn svg{width:13px;height:13px;fill:#fff}
+#send-btn:disabled{opacity:.4;pointer-events:none}
+.input-hint{text-align:center;font-size:9px;color:rgba(255,255,255,.18);
+  margin-top:.3rem;letter-spacing:.4px}
+
+@media(max-width:640px){
+  #app{width:99vw;height:calc(100vh - 16px);border-radius:14px}
+  :root{--sb-w:200px}
+  .hero-title{font-size:24px}
+  #chat-scroll{padding:1.1rem 1rem .8rem}
+  #input-bar{padding:.6rem .8rem .8rem}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <nav id="sidebar">
+    <div class="sb-inner">
+      <div class="sb-logo">
+        <span class="sb-logo-icon">&#9672;</span>
+        <span class="sb-logo-text">Scholar</span>
+        <span class="sb-logo-dot"></span>
+      </div>
+
+      <span class="sb-label">Upload PDF</span>
+      <div id="drop-zone" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 .707.293l4 4a1 1 0 0 1-1.414 1.414L13 5.414V16a1 1 0 0 1-2 0V5.414L8.707 7.707A1 1 0 0 1 7.293 6.293l4-4A1 1 0 0 1 12 2zM4 17a1 1 0 0 1 1 1v1h14v-1a1 1 0 0 1 2 0v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1z"/></svg>
+        <p>Drop PDFs here or <span>browse</span></p>
+      </div>
+      <input type="file" id="file-input" accept=".pdf" multiple/>
+      <div id="file-queue"></div>
+      <button id="index-btn">&#8593; Index Documents</button>
+      <div id="upload-status"></div>
+
+      <div id="indexed-section" style="display:none">
+        <div class="sb-rule"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+          <span class="sb-label" style="margin-bottom:0">Indexed</span>
+          <span id="doc-count" style="font-size:9px;color:var(--accent);background:rgba(0,210,255,.12);border:1px solid rgba(0,210,255,.22);border-radius:4px;padding:1px 6px;font-weight:600"></span>
+        </div>
+        <div id="doc-list"></div>
+      </div>
+
+      <div class="sb-rule"></div>
+      <div class="sb-bottom">
+        <button id="clear-btn">Clear conversation</button>
+        <div class="sb-footer">Groq &middot; ChromaDB &middot; MiniLM</div>
+      </div>
+    </div>
+  </nav>
+
+  <div id="main">
+    <div id="topbar">
+      <button id="sb-toggle" title="Toggle sidebar">&#9776;</button>
+      <span class="topbar-title">Scholar &mdash; Document QA</span>
+    </div>
+
+    <div id="chat-scroll">
+      <div id="hero">
+        <div class="hero-tag">RAG &middot; Document QA</div>
+        <div class="hero-title">Ask your<br><em>documents</em> anything.</div>
+        <div class="hero-desc">
+          Upload a PDF and ask questions in plain English.<br>
+          Every answer is pulled directly from your document &mdash; cited by page, no hallucination.
+        </div>
+        <div class="chip-row">
+          <div class="chip" onclick="fillChip(this)">Summarise the paper</div>
+          <div class="chip" onclick="fillChip(this)">What problem does it solve?</div>
+          <div class="chip" onclick="fillChip(this)">Key contributions</div>
+          <div class="chip" onclick="fillChip(this)">Explain the method</div>
+          <div class="chip" onclick="fillChip(this)">Results &amp; findings</div>
+        </div>
+      </div>
+      <div id="messages"></div>
+    </div>
+
+    <div id="input-bar">
+      <div id="input-wrap">
+        <textarea id="q-input" rows="1" placeholder="Ask something about your documents&#8230;"></textarea>
+        <button id="send-btn" title="Send">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div class="input-hint">Scholar answers only from your indexed documents</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── PDF.js title extraction ──
+var PDFJS_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+var pdfjsLoaded=false,pdfjsQueue=[];
+function loadPdfJs(cb){
+  if(pdfjsLoaded){cb();return;}
+  pdfjsQueue.push(cb);
+  if(pdfjsQueue.length>1)return;
+  var s=document.createElement('script');s.src=PDFJS_URL;
+  s.onload=function(){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLoaded=true;pdfjsQueue.forEach(function(fn){fn();});pdfjsQueue=[];
+  };
+  document.head.appendChild(s);
+}
+function extractPdfTitle(file,callback){
+  loadPdfJs(function(){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var arr=new Uint8Array(e.target.result);
+      pdfjsLib.getDocument({data:arr}).promise.then(function(pdf){
+        pdf.getMetadata().then(function(meta){
+          var t=meta&&meta.info&&meta.info.Title?meta.info.Title.trim():'';
+          if(t&&t.length>2){callback(t);return;}
+          pdf.getPage(1).then(function(page){
+            page.getTextContent().then(function(tc){
+              var items=tc.items;
+              if(!items.length){callback(null);return;}
+              var big=items.reduce(function(a,b){return(b.height||0)>(a.height||0)?b:a},items[0]);
+              var thresh=(big.height||0)*.7;
+              var line=items.filter(function(it){return(it.height||0)>=thresh&&it.str.trim();})
+                .map(function(it){return it.str.trim();}).join(' ');
+              callback(line.length>2?line:big.str.trim()||null);
+            }).catch(function(){callback(null);});
+          }).catch(function(){callback(null);});
+        }).catch(function(){callback(null);});
+      }).catch(function(){callback(null);});
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+var sbOpen=true;
+var busy=false;
+var pendingFiles=[]; // [{file, title, loading}]
+var indexedDocs=[];  // [{filename, title}]
+// Load pre-indexed docs from server on page start
+fetch('/default-docs')
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    d.docs.forEach(function(doc){
+      var entry = {filename: doc.filename, title: doc.filename.replace(/\.pdf$/i,'').replace(/[-_]/g,' ')};
+      indexedDocs.push(entry);
+      renderDocs();
+      // fetch the actual file and extract real title
+      fetch('/static-doc?filename=' + encodeURIComponent(doc.filename))
+        .then(function(r){ return r.blob(); })
+        .then(function(blob){
+          var file = new File([blob], doc.filename, {type:'application/pdf'});
+          extractPdfTitle(file, function(title){
+            if(title){ entry.title = title; renderDocs(); }
+          });
+        });
+    });
+  });
+
+// ── Sidebar toggle ──
+var toggle=document.getElementById('sb-toggle');
+var sidebar=document.getElementById('sidebar');
+toggle.addEventListener('click',function(){
+  sbOpen=!sbOpen;
+  sidebar.classList.toggle('collapsed',!sbOpen);
+});
+
+// ── Upload ──
+var dropZone=document.getElementById('drop-zone');
+var fileInput=document.getElementById('file-input');
+var indexBtn=document.getElementById('index-btn');
+var fileQueue=document.getElementById('file-queue');
+var statusEl=document.getElementById('upload-status');
+
+dropZone.addEventListener('click',function(){fileInput.click();});
+dropZone.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' ')fileInput.click();});
+dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('drag-over');});
+dropZone.addEventListener('drop',function(e){
+  e.preventDefault();dropZone.classList.remove('drag-over');
+  addFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change',function(){addFiles(Array.from(fileInput.files));fileInput.value='';});
+
+function addFiles(files){
+  files.forEach(function(f){
+    if(!f.name.toLowerCase().endsWith('.pdf'))return;
+    if(pendingFiles.find(function(p){return p.file.name===f.name;}))return;
+    var entry={file:f,title:null,loading:true};
+    pendingFiles.push(entry);
+    renderQueue();
+    extractPdfTitle(f,function(title){entry.title=title;entry.loading=false;renderQueue();});
+  });
+}
+
+function renderQueue(){
+  fileQueue.innerHTML='';
+  pendingFiles.forEach(function(entry,i){
+    var row=document.createElement('div');row.className='fq-item';
+    var displayName=entry.loading?entry.file.name:(entry.title||entry.file.name);
+    var short=displayName.length>26?displayName.slice(0,24)+'\u2026':displayName;
+    row.innerHTML='<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>'
+      +'<span class="fq-name">'+(entry.loading?'<em style="opacity:.5">reading\u2026</em>':esc(short))+'</span>'
+      +'<span class="fq-rm" data-i="'+i+'">\u2715</span>';
+    fileQueue.appendChild(row);
+  });
+  indexBtn.style.display=pendingFiles.length?'block':'none';
+  fileQueue.querySelectorAll('.fq-rm').forEach(function(el){
+    el.addEventListener('click',function(){pendingFiles.splice(parseInt(el.dataset.i),1);renderQueue();});
+  });
+}
+
+function showStatus(msg,ok){
+  statusEl.textContent=msg;statusEl.style.color=ok?'var(--green)':'#ff6b6b';
+  statusEl.classList.add('show');
+  setTimeout(function(){statusEl.classList.remove('show');},3000);
+}
+
+indexBtn.addEventListener('click',function(){
+  if(!pendingFiles.length)return;
+  var fd=new FormData();
+  pendingFiles.forEach(function(e){fd.append('files',e.file);});
+  indexBtn.textContent='Indexing\u2026';indexBtn.classList.add('loading');
+  fetch('/upload',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      d.ingested.forEach(function(n){
+        if(!indexedDocs.find(function(doc){return doc.filename===n;})){
+          var match=pendingFiles.find(function(e){return e.file.name===n;});
+          indexedDocs.push({
+            filename:n,
+            title:match&&match.title?match.title:n.replace(/\.pdf$/i,'').replace(/[-_]/g,' ')
+          });
+        }
+      });
+      pendingFiles=[];renderQueue();renderDocs();showStatus('\u2713 Ready to query',true);
+    })
+    .catch(function(){showStatus('Upload failed',false);})
+    .finally(function(){indexBtn.textContent='\u2191 Index Documents';indexBtn.classList.remove('loading');});
+});
+
+function renderDocs(){
+  var section=document.getElementById('indexed-section');
+  var list=document.getElementById('doc-list');
+  var countEl=document.getElementById('doc-count');
+  if(!indexedDocs.length){section.style.display='none';return;}
+  section.style.display='block';
+  countEl.textContent=indexedDocs.length+(indexedDocs.length===1?' doc':' docs');
+  list.innerHTML='';
+  indexedDocs.forEach(function(doc,i){
+    var card=document.createElement('div');card.className='doc-card';
+    var titleShort=doc.title.length>28?doc.title.slice(0,26)+'\u2026':doc.title;
+    var fnShort=doc.filename.length>30?doc.filename.slice(0,28)+'\u2026':doc.filename;
+    card.innerHTML=
+      '<div class="doc-card-header">'
+        +'<span class="doc-num">'+(i+1)+'</span>'
+        +'<span class="doc-title" title="'+esc(doc.title)+'">'+esc(titleShort)+'</span>'
+        +'<span class="doc-live"></span>'
+      +'</div>'
+      +'<div class="doc-meta">&#9672; '+esc(fnShort)+'</div>';
+    list.appendChild(card);
+  });
+}
+
+// ── Clear ──
+document.getElementById('clear-btn').addEventListener('click',function(){
+  document.getElementById('messages').innerHTML='';
+  document.getElementById('hero').style.display='block';
+});
+
+// ── Input ──
+var qInput=document.getElementById('q-input');
+var sendBtn=document.getElementById('send-btn');
+qInput.addEventListener('input',function(){
+  qInput.style.height='auto';
+  qInput.style.height=Math.min(qInput.scrollHeight,110)+'px';
+});
+qInput.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendQuery();}
+});
+sendBtn.addEventListener('click',sendQuery);
+function fillChip(el){qInput.value=el.textContent;qInput.dispatchEvent(new Event('input'));qInput.focus();}
+
+// ── Query + stream ──
+function sendQuery(){
+  var q=qInput.value.trim();
+  if(!q||busy)return;
+  busy=true;sendBtn.disabled=true;
+  document.getElementById('hero').style.display='none';
+  var msgs=document.getElementById('messages');
+
+  var uDiv=document.createElement('div');uDiv.className='msg-u';
+  uDiv.innerHTML='<div class="msg-u-inner">'+esc(q)+'</div>';
+  msgs.appendChild(uDiv);
+
+  var aDiv=document.createElement('div');aDiv.className='msg-a';
+  aDiv.innerHTML='<div class="msg-av">s</div><div class="msg-a-body"><div class="msg-a-inner"><div class="thinking"><span></span><span></span><span></span></div></div></div>';
+  msgs.appendChild(aDiv);
+  scrollBottom();
+
+  qInput.value='';qInput.style.height='auto';
+
+  var innerEl=aDiv.querySelector('.msg-a-inner');
+  var bodyEl=aDiv.querySelector('.msg-a-body');
+  var fullText='';
+
+  fetch('/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})})
+    .then(function(res){
+      var reader=res.body.getReader();
+      var decoder=new TextDecoder();
+      var buf='';
+      function pump(){
+        return reader.read().then(function(result){
+          if(result.done)return;
+          buf+=decoder.decode(result.value,{stream:true});
+          var lines=buf.split('\n');buf=lines.pop();
+          lines.forEach(function(line){
+            if(!line.trim())return;
+            try{
+              var obj=JSON.parse(line);
+              if(obj.token!==undefined){
+                if(innerEl.querySelector('.thinking'))innerEl.innerHTML='';
+                fullText+=obj.token;
+                innerEl.textContent=fullText;
+                scrollBottom();
+              }
+              if(obj.done){
+                if(obj.sources&&obj.sources.length){
+                  var srcRow=document.createElement('div');srcRow.className='src-row';
+                  obj.sources.forEach(function(s){
+                    var pill=document.createElement('span');pill.className='src-pill';
+                    pill.textContent='\u2197 '+s;srcRow.appendChild(pill);
+                  });
+                  bodyEl.appendChild(srcRow);
+                }
+              }
+            }catch(e){}
+          });
+          return pump();
+        });
+      }
+      return pump();
+    })
+    .catch(function(){innerEl.textContent='Something went wrong. Please try again.';})
+    .finally(function(){busy=false;sendBtn.disabled=false;scrollBottom();});
+}
+
+function scrollBottom(){var cs=document.getElementById('chat-scroll');cs.scrollTop=cs.scrollHeight;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>

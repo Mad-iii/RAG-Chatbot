@@ -6,15 +6,20 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-SYSTEM_PROMPT = """You are a research assistant. You have been given context extracted from specific documents.
+SYSTEM_PROMPT = """You are a research assistant answering questions based on document excerpts provided to you.
 
-STRICT RULES:
-- Answer ONLY using the provided context
-- If the answer is not in the context, say exactly: "This information is not in the provided documents."
-- NEVER use your general training knowledge to fill gaps
-- NEVER make up sources, page numbers, or citations
-- Always cite the exact source and page number from the context"""
+RULES:
+- Base your answer primarily on the provided context chunks
+- You may use reasoning and inference to connect ideas across chunks
+- If something is genuinely not mentioned anywhere in the context, say: "This is not covered in the provided documents."
+- Do NOT invent specific facts, numbers, or citations not present in the context
+- Always reference which source/page you are drawing from when possible
+- If asked to summarise multiple documents, summarise each source separately based on the chunks you have"""
+
 def generate_answer(query, context_chunks):
+    if not context_chunks:
+        return "No documents have been indexed yet. Please upload and index a PDF first."
+
     context = "\n\n".join([
         f"[Source: {meta['source']}, Page {meta['page']}]\n{chunk}"
         for chunk, meta in context_chunks

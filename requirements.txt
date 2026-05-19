@@ -1,4 +1,6 @@
-streamlit
+fastapi
+uvicorn[standard]
+python-multipart
 chromadb==0.4.24
 sentence-transformers
 pypdf
