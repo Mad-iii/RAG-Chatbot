@@ -1,5 +1,5 @@
 import os, tempfile, json, glob
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -53,7 +53,12 @@ async def root():
         return f.read()
 
 @app.post("/upload")
-async def upload(files: List[UploadFile] = File(...)):
+async def upload(files: List[UploadFile] = File(...), titles: str = Form("")):
+    title_map = {}
+    try:
+        title_map = json.loads(titles) if titles else {}
+    except Exception:
+        pass
     ingested = []
     for file in files:
         if not file.filename.lower().endswith(".pdf"):
@@ -63,7 +68,7 @@ async def upload(files: List[UploadFile] = File(...)):
             tmp.write(content)
             tmp_path = tmp.name
         try:
-            ingest_pdf(tmp_path)
+            ingest_pdf(tmp_path, title_override=title_map.get(file.filename))
             ingested.append(file.filename)
         finally:
             os.unlink(tmp_path)
@@ -80,7 +85,7 @@ async def query(req: QueryRequest):
             yield json.dumps({"token": token}) + "\n"
         seen, sources = set(), []
         for _, meta in chunks:
-            key = f"{meta['source']} · p{meta['page']}"
+            key = f"{meta.get('title', meta['source'])} · p{meta['page']}"  # ← title here
             if key not in seen:
                 seen.add(key)
                 sources.append(key)

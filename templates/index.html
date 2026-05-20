@@ -6,6 +6,7 @@
 <title>Scholar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;width:100%;overflow:hidden}
@@ -397,9 +398,14 @@ function showStatus(msg,ok){
 indexBtn.addEventListener('click',function(){
   if(!pendingFiles.length)return;
   var fd=new FormData();
-  pendingFiles.forEach(function(e){fd.append('files',e.file);});
-  indexBtn.textContent='Indexing\u2026';indexBtn.classList.add('loading');
-  fetch('/upload',{method:'POST',body:fd})
+  var titleMap = {};
+  pendingFiles.forEach(function(e){
+    fd.append('files', e.file);
+    if(e.title) titleMap[e.file.name] = e.title;
+  });
+  fd.append('titles', JSON.stringify(titleMap));  // ← send titles
+  indexBtn.textContent = 'Indexing\u2026'; indexBtn.classList.add('loading');
+  fetch('/upload', {method:'POST', body:fd})
     .then(function(r){return r.json();})
     .then(function(d){
       d.ingested.forEach(function(n){
@@ -499,7 +505,7 @@ function sendQuery(){
               if(obj.token!==undefined){
                 if(innerEl.querySelector('.thinking'))innerEl.innerHTML='';
                 fullText+=obj.token;
-                innerEl.textContent=fullText;
+                innerEl.innerHTML=marked.parse(fullText);
                 scrollBottom();
               }
               if(obj.done){

@@ -21,9 +21,9 @@ def generate_answer(query, context_chunks):
         return "No documents have been indexed yet. Please upload and index a PDF first."
 
     context = "\n\n".join([
-        f"[Source: {meta['source']}, Page {meta['page']}]\n{chunk}"
-        for chunk, meta in context_chunks
-    ])
+    f"[Source: {meta.get('title', meta['source'])}, Page {meta['page']}]\n{chunk}"  # ← title here
+    for chunk, meta in context_chunks
+])
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",

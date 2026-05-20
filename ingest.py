@@ -12,9 +12,17 @@ def chunk_text(text, chunk_size=500, overlap=50):
             chunks.append(chunk)
     return chunks
 
-def ingest_pdf(pdf_path):
+def ingest_pdf(pdf_path, title_override=None):
     reader = PdfReader(pdf_path)
     filename = os.path.basename(pdf_path)
+
+    if title_override:
+        title = title_override
+    else:
+        # Extract title from PDF metadata, fallback to filename without extension
+        raw_title = (reader.metadata or {}).get("/Title", "").strip()
+        title = raw_title if raw_title else os.path.splitext(filename)[0]
+
     all_chunks = []
     metadatas = []
 
@@ -23,7 +31,7 @@ def ingest_pdf(pdf_path):
         chunks = chunk_text(text)
         for chunk in chunks:
             all_chunks.append(chunk)
-            metadatas.append({"source": filename, "page": page_num + 1})
+            metadatas.append({"source": filename, "page": page_num + 1, "title": title})  # ← add title
 
     embeddings = get_embed_model().encode(all_chunks).tolist()
     ids = [f"{filename}_p{m['page']}_{i}" for i, m in enumerate(metadatas)]
@@ -34,7 +42,7 @@ def ingest_pdf(pdf_path):
         metadatas=metadatas,
         ids=ids
     )
-    print(f"[OK] Ingested {len(all_chunks)} chunks from {filename}")
+    print(f"[OK] Ingested {len(all_chunks)} chunks from {filename} (title: {title})")
 
 if __name__ == "__main__":
     for f in os.listdir("./docs"):
